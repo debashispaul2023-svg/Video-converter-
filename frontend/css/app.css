@@ -1,0 +1,54 @@
+:root {
+  color-scheme: dark;
+  --ink: #14222b;
+  --panel: #1d303b;
+  --line: #34515f;
+  --text: #f4f7f8;
+  --muted: #c5d4db;
+  --accent: #e2a15a;
+  --accent-ink: #1b140c;
+  --danger: #ffb4a8;
+  --ok: #b7e4c7;
+  font-family: "Segoe UI", sans-serif;
+}
+
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--ink); color: var(--text); }
+.top, .shell { width: min(960px, calc(100% - 24px)); margin: 0 auto; }
+.top { padding: 20px 0 8px; }
+.brand { margin: 0; font-size: 1.4rem; font-weight: 700; }
+.tag, .hint, .drop { color: var(--muted); }
+.shell { display: grid; gap: 16px; padding-bottom: 32px; }
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: 16px; padding: 16px; }
+.layout { display: grid; gap: 16px; }
+h1, h2 { margin: 0 0 8px; font-size: 1.25rem; }
+button, .primary, select, input { font: inherit; }
+.primary, .secondary {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-height: 48px; padding: 12px 18px; border-radius: 12px; border: 0;
+  text-decoration: none; cursor: pointer;
+}
+.primary { background: var(--accent); color: var(--accent-ink); font-weight: 700; }
+.secondary { background: transparent; color: var(--text); border: 1px solid var(--line); }
+button:focus-visible, a:focus-visible, select:focus-visible, input:focus-visible {
+  outline: 3px solid var(--accent); outline-offset: 2px;
+}
+.choices, fieldset { display: grid; gap: 8px; border: 0; margin: 12px 0; padding: 0; }
+.choices label, fieldset label { display: flex; gap: 8px; align-items: center; min-height: 44px; }
+.field { display: grid; gap: 6px; margin: 10px 0; }
+select, input[type="number"] {
+  min-height: 44px; border-radius: 10px; border: 1px solid var(--line);
+  background: var(--ink); color: var(--text); padding: 8px;
+}
+.bar { height: 14px; background: #0e191f; border-radius: 999px; overflow: hidden; }
+.bar span { display: block; height: 100%; width: 0; background: var(--accent); }
+.status { min-height: 1.2em; }
+.status.error { color: var(--danger); }
+.status.ok { color: var(--ok); }
+.hidden { display: none; }
+dl { display: grid; grid-template-columns: 8rem 1fr; gap: 6px 10px; margin: 0; }
+dt { color: var(--muted); }
+.picker.drag { outline: 3px dashed var(--accent); }
+@media (min-width: 800px) {
+  .layout { grid-template-columns: 0.8fr 1.2fr; align-items: start; }
+}
