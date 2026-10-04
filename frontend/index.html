@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>VideoForge</title>
+  <link rel="stylesheet" href="/static/css/app.css">
+</head>
+<body>
+  <header class="top">
+    <p class="brand">VideoForge</p>
+    <p class="tag">Server-side processing. Your phone does not convert the video.</p>
+  </header>
+  <main class="shell">
+    <section class="card picker" id="picker">
+      <h1>Video converter</h1>
+      <p>Choose a video. Upload, settings, and encoding stay on the server.</p>
+      <button class="primary" id="choose" type="button">Choose video</button>
+      <input id="file" type="file" accept="video/*,.mp4,.mov,.mkv,.webm,.avi,.m4v" multiple hidden>
+      <ul id="file-list" class="file-list"></ul>
+      <p class="drop" id="drop">Drop a video here on desktop</p>
+      <p class="status" id="message" role="status"></p>
+    </section>
+
+    <section class="card hidden" id="upload-panel" aria-live="polite">
+      <h2>Upload</h2>
+      <p id="file-name"></p>
+      <p id="file-size"></p>
+      <div class="bar" aria-hidden="true"><span id="upload-bar"></span></div>
+      <p id="upload-detail"></p>
+    </section>
+
+    <section class="layout hidden" id="workspace">
+      <section class="card" id="media-card">
+        <h2>Source</h2>
+        <dl id="media"></dl>
+      </section>
+      <form class="card" id="settings">
+        <h2>Conversion</h2>
+        <fieldset>
+          <legend>Preset</legend>
+          <div id="presets" class="choices"></div>
+        </fieldset>
+        <fieldset>
+          <legend>Audio</legend>
+          <label><input type="radio" name="audio" value="aac" checked> AAC stereo, default</label>
+          <label><input type="radio" name="audio" value="copy"> Copy original AAC</label>
+          <label><input type="radio" name="audio" value="none"> No audio</label>
+        </fieldset>
+        <fieldset>
+          <legend>Quality mode</legend>
+          <label><input type="radio" name="mode" value="crf" checked> Quality</label>
+          <label><input type="radio" name="mode" value="bitrate"> Bitrate</label>
+          <label><input type="radio" name="mode" value="target_size"> Target size</label>
+        </fieldset>
+        <div id="quality-presets" class="choices"></div>
+        <label class="field" id="bitrate-field">Video bitrate
+          <select id="bitrate" name="bitrate"></select>
+        </label>
+        <label class="field" id="target-field">Target file size (MB)
+          <input id="target" name="target" type="number" min="1" step="1" value="100">
+        </label>
+        <p id="estimate" class="hint"></p>
+        <details>
+          <summary>Advanced</summary>
+          <label class="field">H.264 level
+            <select id="level" name="level"></select>
+          </label>
+          <p class="hint">Lower CRF usually means higher quality and a larger file. The server validates the value.</p>
+          <label class="field">Resolution
+            <select id="resolution"></select>
+          </label>
+          <label class="field">FPS
+            <select id="fps"></select>
+          </label>
+          <label class="field">Encoder speed
+            <select id="speed"></select>
+          </label>
+          <label class="field">Audio bitrate
+            <select id="audio-bitrate"></select>
+          </label>
+        </details>
+        <p class="status" id="validation" role="status"></p>
+        <button class="primary" id="convert" type="submit">Convert video</button>
+        <button class="secondary hidden" id="cancel" type="button">Cancel conversion</button>
+      </form>
+    </section>
+
+    <section class="card hidden" id="progress-panel" aria-live="polite">
+      <h2 id="progress-title">Queued</h2>
+      <p id="progress-copy">Your video is waiting for the server worker.</p>
+      <div class="bar" aria-hidden="true"><span id="convert-bar"></span></div>
+      <p id="progress-detail"></p>
+    </section>
+
+    <section class="card hidden" id="result">
+      <h2>Conversion complete</h2>
+      <dl id="result-stats"></dl>
+      <a class="primary" id="download" href="#">Download video</a>
+    </section>
+  </main>
+  <script type="module" src="/static/js/app.js"></script>
+</body>
+</html>
