@@ -1,0 +1,28 @@
+services:
+  redis:
+    image: redis:7
+    restart: unless-stopped
+  api:
+    build: .
+    environment:
+      REDIS_URL: redis://redis:6379/0
+      TEMP_DIRECTORY: /data/jobs
+    ports:
+      - "8000:8000"
+    volumes:
+      - jobs:/data/jobs
+    depends_on:
+      - redis
+  worker:
+    build: .
+    command: ["python", "-m", "app.workers.conversion_worker"]
+    environment:
+      PYTHONPATH: backend
+      REDIS_URL: redis://redis:6379/0
+      TEMP_DIRECTORY: /data/jobs
+    volumes:
+      - jobs:/data/jobs
+    depends_on:
+      - redis
+volumes:
+  jobs:
