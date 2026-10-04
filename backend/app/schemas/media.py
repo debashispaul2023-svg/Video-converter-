@@ -13,6 +13,9 @@ class VideoStreamInfo(BaseModel):
     fps: float | None = None
     bitrate: int | None = None
     frame_count: int | None = None
+    duration_seconds: float | None = None
+    start_time_seconds: float | None = None
+    timestamps_missing: bool = False
 
 
 class AudioStreamInfo(BaseModel):
@@ -22,6 +25,9 @@ class AudioStreamInfo(BaseModel):
     channels: int | None = None
     channel_layout: str | None = None
     bitrate: int | None = None
+    duration_seconds: float | None = None
+    start_time_seconds: float | None = None
+    timestamps_missing: bool = False
 
 
 class StreamCounts(BaseModel):

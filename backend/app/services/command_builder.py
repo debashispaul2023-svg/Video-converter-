@@ -9,6 +9,7 @@ from app.config import Settings
 from app.schemas.capabilities import CapabilitiesResponse
 from app.schemas.conversion import ConvertRequest
 from app.services.presets import PresetDefinition, require_preset
+from app.services.formats import container_allows
 from app.services.quality import ConversionPlan, PlanError, build_plan
 
 _AAC_BITRATE_RE = re.compile(r"^(?:64|96|128|160|192|256|320)k$")
@@ -86,9 +87,10 @@ def build_preset_command(
         )
     except PlanError as exc:
         raise CommandError(exc.message) from None
+    _reject_incompatible_audio_copy(plan, media or {}, preset.container, preset.family)
     if input_path.suffix == "" or output_path.name not in {"output.mp4", "output.partial.mp4"}:
         raise CommandError("Output path is not a server-generated MP4.")
-    return _arguments(preset, plan, input_path, output_path), plan
+    return _arguments(preset, plan, input_path, output_path, media or {}), plan
 
 
 def _arguments(
@@ -96,15 +98,15 @@ def _arguments(
     plan: ConversionPlan,
     input_path: Path,
     output_path: Path,
+    media: dict,
 ) -> list[str]:
-    command = [
-        "-hide_banner",
-        "-nostdin",
-        "-y",
-        "-i",
-        str(input_path),
-        "-map",
-        "0:v:0",
+    command = ["-hide_banner", "-nostdin", "-y"]
+    if _missing_timestamps(media):
+        command.extend(["-fflags", "+genpts"])
+    command.extend(["-i", str(input_path), "-map", "0:v:0"])
+    if _negative_timestamps(media):
+        command.extend(["-avoid_negative_ts", "make_zero"])
+    command.extend([
         "-c:v",
         preset.encoder,
         "-profile:v",
@@ -113,7 +115,7 @@ def _arguments(
         preset.pixel_format,
         "-preset",
         plan.encoder_preset,
-    ]
+    ])
     if plan.quality_mode == "crf":
         command.extend(["-crf", str(plan.crf)])
     else:
@@ -125,17 +127,39 @@ def _arguments(
         command.extend(["-tune", plan.tune])
     if plan.level and plan.level != "auto" and preset.family == "h264":
         command.extend(["-level:v", plan.level])
-    if plan.scale_filter:
-        command.extend(["-vf", plan.scale_filter])
-    if plan.fps:
-        command.extend(["-r", str(plan.fps)])
+    filters = [item for item in (plan.scale_filter, f"fps={plan.fps}" if plan.fps else None) if item]
+    if filters:
+        command.extend(["-vf", ",".join(filters)])
     if plan.audio_mode == "aac":
         if not plan.audio_bitrate or not _AAC_BITRATE_RE.fullmatch(plan.audio_bitrate):
             raise CommandError("The audio bitrate is not valid.")
         command.extend(["-map", "0:a:0", "-c:a", "aac", "-ac", "2", "-b:a", plan.audio_bitrate])
+        if plan.fps:
+            command.extend(["-af", "aresample=async=1:first_pts=0"])
     elif plan.audio_mode == "copy":
         command.extend(["-map", "0:a:0", "-c:a", "copy"])
     else:
         command.append("-an")
     command.extend(["-movflags", "+faststart", str(output_path)])
     return command
+
+
+def _missing_timestamps(media: dict) -> bool:
+    streams = [media.get("video") or {}, media.get("audio") or {}]
+    return any(stream.get("timestamps_missing") is True for stream in streams)
+
+
+def _negative_timestamps(media: dict) -> bool:
+    for stream in (media.get("video") or {}, media.get("audio") or {}):
+        start = stream.get("start_time_seconds")
+        if isinstance(start, (int, float)) and start < 0:
+            return True
+    return False
+
+
+def _reject_incompatible_audio_copy(plan: ConversionPlan, media: dict, container: str, family: str) -> None:
+    if plan.audio_mode != "copy":
+        return
+    codec = ((media.get("audio") or {}).get("codec") or "").lower()
+    if not codec or not container_allows(container, family, codec):
+        raise CommandError("Copying this audio is not compatible with the output container.")

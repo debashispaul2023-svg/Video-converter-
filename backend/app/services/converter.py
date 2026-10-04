@@ -233,7 +233,13 @@ class ConversionService:
             self._fail(job_id, "Output validation failed.")
             return
         expect_audio = plan.audio_mode != "none"
-        if not _output_matches(output_media, preset_id, expect_audio=expect_audio):
+        if not _output_matches(output_media, preset_id, audio_mode=plan.audio_mode):
+            self._remove_output(partial_path)
+            self._remove_output(output_path)
+            self._fail(job_id, "Output validation failed.")
+            return
+        summary = _validation_summary(output_media, expect_audio)
+        if summary is None:
             self._remove_output(partial_path)
             self._remove_output(output_path)
             self._fail(job_id, "Output validation failed.")
@@ -250,6 +256,7 @@ class ConversionService:
                     "size_bytes": output_path.stat().st_size,
                     "media": output_media.model_dump(),
                     "compression": compression_result(original_size, output_path.stat().st_size),
+                    "validation": summary,
                 },
             },
         )
@@ -351,7 +358,7 @@ def _stop_process(process: subprocess.Popen) -> None:
         process.wait(timeout=5)
 
 
-def _output_matches(media, preset_id: str, *, expect_audio: bool) -> bool:
+def _output_matches(media, preset_id: str, *, audio_mode: str) -> bool:
     preset = PRESETS.get(preset_id)
     if preset is None:
         return False
@@ -365,8 +372,50 @@ def _output_matches(media, preset_id: str, *, expect_audio: bool) -> bool:
         return False
     if video.pixel_format != preset.pixel_format:
         return False
-    if expect_audio:
+    if audio_mode == "aac":
         audio = media.audio
         if audio is None or audio.codec != "aac" or audio.channels != 2:
             return False
+    elif audio_mode == "copy" and media.audio is None:
+        return False
     return True
+
+
+def _validation_summary(media, expect_audio: bool) -> dict | None:
+    video = media.video
+    if video is None or not video.codec or not video.width or not video.height:
+        return None
+    audio = media.audio
+    difference = _duration_gap(media, expect_audio)
+    if difference is None:
+        return None
+    return {
+        "container": media.format_name,
+        "video_codec": video.codec,
+        "width": video.width,
+        "height": video.height,
+        "pixel_format": video.pixel_format,
+        "fps": video.fps,
+        "duration_seconds": video.duration_seconds or media.duration_seconds,
+        "audio_codec": None if audio is None else audio.codec,
+        "audio_channels": None if audio is None else audio.channels,
+        "audio_sample_rate": None if audio is None else audio.sample_rate,
+        "duration_difference_seconds": difference,
+    }
+
+
+def _duration_gap(media, expect_audio: bool) -> float | None:
+    video = media.video
+    video_duration = video.duration_seconds or media.duration_seconds
+    if video_duration is None or video_duration <= 0:
+        return None
+    if not expect_audio or media.audio is None:
+        return 0.0
+    audio_duration = media.audio.duration_seconds or media.duration_seconds
+    if audio_duration is None:
+        return None
+    difference = abs(video_duration - audio_duration)
+    tolerance = max(0.5, video_duration * 0.02)
+    if difference > tolerance:
+        return None
+    return round(difference, 3)

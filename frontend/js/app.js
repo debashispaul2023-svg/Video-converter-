@@ -90,11 +90,11 @@ function onDrop(event) {
 }
 
 async function selected(fileList) {
-  const files = Array.from(fileList || []);
-  if (!files.length) return;
+  const files = Array.from(fileList || []).slice(0, 30);
   state.files = files;
   const list = $("file-list");
   list.replaceChildren();
+  $("selected-count").textContent = `Selected: ${files.length} / 30`;
   files.forEach((file, index) => {
     const item = document.createElement("li");
     item.textContent = `${file.name} · ${formatBytes(file.size)}`;
@@ -108,7 +108,14 @@ async function selected(fileList) {
     item.append(remove);
     list.append(item);
   });
+  const convert = $("convert");
+  if (files.length > 30) {
+    convert.disabled = true;
+    setMessage("Maximum 30 videos allowed.", "error");
+    return;
+  }
   if (files.length === 1) {
+    convert.disabled = false;
     show("upload-panel");
     $("file-name").textContent = files[0].name;
     $("file-size").textContent = formatBytes(files[0].size);
@@ -125,8 +132,17 @@ async function selected(fileList) {
     }
     return;
   }
-  show("workspace");
-  setMessage(`${files.length} videos selected. They will be uploaded as separate jobs.`, "ok");
+  if (files.length > 1 && files.length < 20) {
+    convert.disabled = true;
+    show("workspace");
+    setMessage("Select at least 20 videos to start a batch.", "error");
+    return;
+  }
+  convert.disabled = files.length < 20;
+  if (files.length >= 20) {
+    show("workspace");
+    setMessage("Batch ready", "ok");
+  }
 }
 
 function showUpload(loaded, total, started) {
@@ -174,7 +190,10 @@ async function checkSettings() {
 
 async function startConversion(event) {
   event.preventDefault();
-  if (state.files.length > 1) return startBatch();
+  if (state.files.length > 1) {
+    if (state.files.length < 20 || state.files.length > 30) return;
+    return startBatch();
+  }
   try {
     await validate(state.jobId, buildSettings($("settings")));
     const accepted = await convert(state.jobId, buildSettings($("settings")));

@@ -15,11 +15,16 @@ def test_batch_status_rules() -> None:
     assert _batch_status({"queued": 0, "processing": 0, "completed": 0, "failed": 2, "cancelled": 0}, 2) == "failed"
 
 
-def test_invalid_batch_and_limit() -> None:
+def _ids(count: int) -> list[str]:
+    return [f"00000000-0000-4000-8000-{index:012d}" for index in range(count)]
+
+
+def test_batch_limits_are_enforced() -> None:
     with TestClient(app) as client:
-        missing = client.get("/api/batches/../secret")
-        assert missing.status_code == 404
-        too_many = client.post("/api/batches", json={"job_ids": [f"00000000-0000-4000-8000-00000000000{i}" for i in range(11)]})
-        assert too_many.status_code == 422
-        raw = client.post("/api/batches", json={"job_ids": ["00000000-0000-4000-8000-000000000001"], "ffmpeg_args": ["-i"]})
-        assert raw.status_code in {404, 422}
+        assert client.get("/api/batches/../secret").status_code == 404
+        assert client.post("/api/batches", json={"job_ids": _ids(19)}).status_code == 422
+        assert client.post("/api/batches", json={"job_ids": _ids(31)}).status_code == 422
+        assert client.post("/api/batches", json={"job_ids": _ids(20)}).status_code == 404
+        assert client.post("/api/batches", json={"job_ids": _ids(30)}).status_code == 404
+        raw = client.post("/api/batches", json={"job_ids": _ids(20), "ffmpeg_args": ["-i"]})
+        assert raw.status_code == 422

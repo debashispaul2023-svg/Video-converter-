@@ -46,8 +46,11 @@ def create_batch(
     job_ids = body.get("job_ids")
     if not isinstance(job_ids, list) or not job_ids:
         raise HTTPException(status_code=422, detail="Select at least one uploaded video.")
-    if len(job_ids) > settings.max_batch_files:
-        raise HTTPException(status_code=422, detail=f"A batch can contain at most {settings.max_batch_files} videos.")
+    if len(job_ids) < settings.min_batch_files or len(job_ids) > settings.max_batch_files:
+        raise HTTPException(
+            status_code=422,
+            detail=f"A batch must contain {settings.min_batch_files} to {settings.max_batch_files} videos.",
+        )
     if any(not is_job_id(job_id) for job_id in job_ids):
         raise HTTPException(status_code=404, detail="Job not found.")
     plan_body = {key: value for key, value in body.items() if key != "job_ids"}

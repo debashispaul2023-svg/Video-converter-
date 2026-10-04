@@ -15,8 +15,9 @@
     <section class="card picker" id="picker">
       <h1>Video converter</h1>
       <p>Choose a video. Upload, settings, and encoding stay on the server.</p>
-      <button class="primary" id="choose" type="button">Choose video</button>
+      <button class="primary" id="choose" type="button">Choose videos</button>
       <input id="file" type="file" accept="video/*,.mp4,.mov,.mkv,.webm,.avi,.m4v" multiple hidden>
+      <p id="selected-count">Selected: 0 / 30</p>
       <ul id="file-list" class="file-list"></ul>
       <p class="drop" id="drop">Drop a video here on desktop</p>
       <p class="status" id="message" role="status"></p>

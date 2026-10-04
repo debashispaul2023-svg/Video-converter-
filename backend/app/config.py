@@ -44,7 +44,8 @@ class Settings(BaseSettings):
     rate_limit_uploads: int = Field(default=30, alias="RATE_LIMIT_UPLOADS")
     rate_limit_conversions: int = Field(default=60, alias="RATE_LIMIT_CONVERSIONS")
     max_target_size_bytes: int = Field(default=21474836480, alias="MAX_TARGET_SIZE_BYTES")
-    max_batch_files: int = Field(default=10, alias="MAX_BATCH_FILES")
+    max_batch_files: int = Field(default=30, alias="MAX_BATCH_FILES")
+    min_batch_files: int = Field(default=20, alias="MIN_BATCH_FILES")
 
     model_config = SettingsConfigDict(
         env_file=".env",
@@ -63,6 +64,7 @@ class Settings(BaseSettings):
         "worker_concurrency",
         "max_target_size_bytes",
         "max_batch_files",
+        "min_batch_files",
     )
     @classmethod
     def positive(cls, value: int) -> int:

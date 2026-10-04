@@ -115,3 +115,59 @@ def test_client_cannot_add_ffmpeg_arguments() -> None:
         ConvertRequest.model_validate({"preset": "h264_main", "ffmpeg": "-vf evil"})
     with pytest.raises(ValidationError):
         ConvertRequest.model_validate({"preset": "hevc"})
+
+
+def test_timestamp_flags_are_conditional(tmp_path: Path) -> None:
+    from app.services.command_builder import CommandError, build_preset_command
+
+    valid = {
+        "video": {"start_time_seconds": 0.0, "duration_seconds": 1.0, "timestamps_missing": False},
+        "audio": {"codec": "aac", "start_time_seconds": 0.0, "duration_seconds": 1.0, "timestamps_missing": False},
+    }
+    command, _plan = build_preset_command(
+        Settings(),
+        _capabilities(["libx264"], ["aac"]),
+        "h264_main",
+        tmp_path / "input.mp4",
+        tmp_path / "output.partial.mp4",
+        has_audio=True,
+        request=ConvertRequest(preset="h264_main", fps="30"),
+        media=valid,
+    )
+    assert "+genpts" not in command
+    assert "make_zero" not in command
+    assert "aresample=async=1:first_pts=0" in command
+    assert "-shortest" not in command
+    missing, _plan = build_preset_command(
+        Settings(),
+        _capabilities(["libx264"], ["aac"]),
+        "h264_main",
+        tmp_path / "input.mp4",
+        tmp_path / "output.partial.mp4",
+        has_audio=True,
+        media={"video": {"timestamps_missing": True}, "audio": {"codec": "aac"}},
+    )
+    assert "+genpts" in missing
+    assert "make_zero" not in missing
+    negative, _plan = build_preset_command(
+        Settings(),
+        _capabilities(["libx264"], ["aac"]),
+        "h264_main",
+        tmp_path / "input.mp4",
+        tmp_path / "output.partial.mp4",
+        has_audio=True,
+        media={"video": {"start_time_seconds": -0.04, "duration_seconds": 1.0}, "audio": {"codec": "aac"}},
+    )
+    assert "make_zero" in negative
+    assert "+genpts" not in negative
+    with pytest.raises(CommandError, match="Audio copy"):
+        build_preset_command(
+            Settings(),
+            _capabilities(["libx264"], ["aac"]),
+            "h264_main",
+            tmp_path / "input.mp4",
+            tmp_path / "output.partial.mp4",
+            has_audio=True,
+            request=ConvertRequest(preset="h264_main", audio_mode="copy"),
+            media={"audio": {"codec": "opus"}},
+        )

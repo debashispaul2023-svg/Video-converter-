@@ -13,7 +13,7 @@ def test_frontend_is_served_and_does_not_encode() -> None:
         api = client.get("/static/js/api.js")
     assert page.status_code == 200
     assert "VideoForge" in page.text
-    assert "Choose video" in page.text
+    assert "Choose videos" in page.text
     assert "ffmpeg.wasm" not in page.text.lower()
     assert "FFmpeg arguments" not in page.text
     assert css.status_code == 200

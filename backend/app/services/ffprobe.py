@@ -166,6 +166,9 @@ def _video(stream: dict) -> VideoStreamInfo:
         fps=fps,
         bitrate=_int_or_none(stream.get("bit_rate")),
         frame_count=_frame_count(stream),
+        duration_seconds=parse_rate(stream.get("duration")),
+        start_time_seconds=_start_time(stream),
+        timestamps_missing=_timestamps_missing(stream),
     )
 
 
@@ -178,7 +181,22 @@ def _audio(stream: dict) -> AudioStreamInfo:
         channels=_int_or_none(stream.get("channels")),
         channel_layout=layout,
         bitrate=_int_or_none(stream.get("bit_rate")),
+        duration_seconds=parse_rate(stream.get("duration")),
+        start_time_seconds=_start_time(stream),
+        timestamps_missing=_timestamps_missing(stream),
     )
+
+
+def _start_time(stream: dict) -> float | None:
+    return parse_rate(stream.get("start_time"))
+
+
+def _timestamps_missing(stream: dict) -> bool:
+    start = stream.get("start_time")
+    duration = stream.get("duration")
+    start_missing = start in (None, "", "N/A")
+    duration_missing = duration in (None, "", "N/A")
+    return start_missing and duration_missing
 
 
 def _duration(fmt: dict, video_stream: dict | None) -> float | None:

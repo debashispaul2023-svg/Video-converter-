@@ -33,7 +33,7 @@ The phone selects a file, uploads it, sends structured settings, and downloads t
 
 Availability depends on the installed FFmpeg build. A discovered encoder is not automatically a conversion preset.
 
-Batch conversion creates independent server-side jobs. Each video is processed separately by the server. A batch can contain up to `MAX_BATCH_FILES` (default 10). `POST /api/batches` queues those jobs with one shared plan. `GET /api/batches/{id}` and its event stream report real child progress. Cancelling a batch cancels only its queued or processing jobs. A failed video does not remove completed downloads. Single-file `POST /api/jobs` is unchanged.
+A batch must contain 20 to 30 videos. One video still uses the single-file flow. Batch conversion creates independent server-side jobs. Each video is processed separately by the server. `POST /api/batches` queues those jobs with one shared plan. `GET /api/batches/{id}` and its event stream report real child progress. Cancelling a batch cancels only its queued or processing jobs. A failed video does not remove completed downloads. Single-file `POST /api/jobs` is unchanged.
 
 ## H.264 Main
 
